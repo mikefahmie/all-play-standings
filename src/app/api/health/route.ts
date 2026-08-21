@@ -1,24 +1,33 @@
 import { NextResponse } from "next/server";
 import { getSupabaseClient } from "@/lib/supabase/server";
 
+const SCHEMA_TABLES = [
+  "leagues",
+  "teams",
+  "weekly_scores",
+  "ingestion_state",
+] as const;
+
 export async function GET() {
   try {
     const supabase = getSupabaseClient();
-    const { error } = await supabase
-      .from("_health_check")
-      .select("*")
-      .limit(1);
 
-    // A "relation does not exist" error still proves the app reached
-    // Supabase and authenticated successfully — no schema exists yet.
-    if (error && error.code !== "PGRST205" && error.code !== "42P01") {
-      return NextResponse.json(
-        { status: "error", message: error.message },
-        { status: 500 },
-      );
+    for (const table of SCHEMA_TABLES) {
+      const { error } = await supabase.from(table).select("id").limit(1);
+
+      if (error) {
+        return NextResponse.json(
+          { status: "error", table, message: error.message },
+          { status: 500 },
+        );
+      }
     }
 
-    return NextResponse.json({ status: "ok", supabase: "reachable" });
+    return NextResponse.json({
+      status: "ok",
+      supabase: "reachable",
+      tables: SCHEMA_TABLES,
+    });
   } catch (err) {
     return NextResponse.json(
       {

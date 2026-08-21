@@ -18,6 +18,14 @@ Open [http://localhost:3000](http://localhost:3000) with your browser to see the
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
+## Database
+
+Schema lives in [`db/schema.sql`](db/schema.sql). Apply it by pasting the
+file into the Supabase project's Dashboard SQL Editor and running it — it's
+safe to re-run (every statement uses `IF NOT EXISTS`). `/api/health`
+queries the resulting tables to confirm the schema is applied and
+queryable.
+
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
 ## Learn More
