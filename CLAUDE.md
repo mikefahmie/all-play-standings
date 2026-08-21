@@ -107,6 +107,12 @@ instead of reading `process.env.SEASON`, to get real data to check against
 before wrapping up. Also re-confirm the current 2026 team count each time
 (see league size note above) since it may still be settling.
 
+The 2025 season's regular season is weeks 1–13; weeks 14 on are
+playoffs/consolation and are outliers (different matchup structure, teams
+resting/tanking) — don't use them for hand-checked verification data.
+When seeding `weekly_scores` with 2025 data to verify against, ingest
+weeks 1–13 only.
+
 ## Story wrap-up procedure
 
 Work through user stories in the order listed in
