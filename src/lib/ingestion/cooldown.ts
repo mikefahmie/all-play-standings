@@ -15,6 +15,8 @@ export type StalenessCheckResult =
       cooldownMs: number;
       nextEligibleAt: string;
       ingestResult: IngestResult;
+      lastIngestedAt: string | null;
+      lastError: string | null;
     }
   | {
       status: "skipped-cooldown";
@@ -22,6 +24,8 @@ export type StalenessCheckResult =
       lastAttemptedAt: string;
       nextEligibleAt: string;
       cooldownRemainingMs: number;
+      lastIngestedAt: string | null;
+      lastError: string | null;
     }
   | {
       status: "error";
@@ -34,6 +38,24 @@ interface LeagueRow {
 
 interface IngestionStateRow {
   last_attempted_at: string | null;
+  last_ingested_at: string | null;
+  last_error: string | null;
+}
+
+async function readIngestionState(
+  supabase: ReturnType<typeof getSupabaseClient>,
+  internalLeagueId: number,
+): Promise<{ lastIngestedAt: string | null; lastError: string | null }> {
+  const { data } = await supabase
+    .from("ingestion_state")
+    .select("last_ingested_at, last_error")
+    .eq("league_id", internalLeagueId)
+    .single<Pick<IngestionStateRow, "last_ingested_at" | "last_error">>();
+
+  return {
+    lastIngestedAt: data?.last_ingested_at ?? null,
+    lastError: data?.last_error ?? null,
+  };
 }
 
 export async function checkAndTriggerIngestion(
@@ -52,11 +74,25 @@ export async function checkAndTriggerIngestion(
 
   if (!league) {
     const ingestResult = await ingestCurrentWeek(leagueId, season);
+
+    const { data: bootstrappedLeague } = await supabase
+      .from("leagues")
+      .select("id")
+      .eq("espn_league_id", leagueId)
+      .eq("season", season)
+      .single<LeagueRow>();
+
+    const { lastIngestedAt, lastError } = bootstrappedLeague
+      ? await readIngestionState(supabase, bootstrappedLeague.id)
+      : { lastIngestedAt: null, lastError: null };
+
     return {
       status: "ingested",
       cooldownMs,
       nextEligibleAt: new Date(Date.now() + cooldownMs).toISOString(),
       ingestResult,
+      lastIngestedAt,
+      lastError,
     };
   }
 
@@ -89,17 +125,23 @@ export async function checkAndTriggerIngestion(
 
   if (claimed && claimed.length > 0) {
     const ingestResult = await ingestCurrentWeek(leagueId, season);
+    const { lastIngestedAt, lastError } = await readIngestionState(
+      supabase,
+      internalLeagueId,
+    );
     return {
       status: "ingested",
       cooldownMs,
       nextEligibleAt: new Date(Date.now() + cooldownMs).toISOString(),
       ingestResult,
+      lastIngestedAt,
+      lastError,
     };
   }
 
   const { data: stateRow, error: readError } = await supabase
     .from("ingestion_state")
-    .select("last_attempted_at")
+    .select("last_attempted_at, last_ingested_at, last_error")
     .eq("league_id", internalLeagueId)
     .single<IngestionStateRow>();
 
@@ -122,5 +164,7 @@ export async function checkAndTriggerIngestion(
       new Date(lastAttemptedAt).getTime() + cooldownMs,
     ).toISOString(),
     cooldownRemainingMs: Math.max(0, remaining),
+    lastIngestedAt: stateRow.last_ingested_at,
+    lastError: stateRow.last_error,
   };
 }
