@@ -25,9 +25,9 @@ interface TeamRow {
   abbrev: string;
 }
 
-export async function computeSeasonStandings(
+async function fetchTeamsAndScores(
   leagueId: number,
-): Promise<SeasonStanding[]> {
+): Promise<{ teams: TeamRow[]; scoreRows: WeeklyScoreRow[] }> {
   const supabase = getSupabaseClient();
 
   const { data: teamRows, error: teamsError } = await supabase
@@ -39,8 +39,6 @@ export async function computeSeasonStandings(
     throw new Error(teamsError.message);
   }
 
-  const teams = (teamRows ?? []) as TeamRow[];
-
   const { data: scoreRows, error: scoresError } = await supabase
     .from("weekly_scores")
     .select("team_id, week, total_points")
@@ -50,8 +48,21 @@ export async function computeSeasonStandings(
     throw new Error(scoresError.message);
   }
 
+  return {
+    teams: (teamRows ?? []) as TeamRow[],
+    scoreRows: (scoreRows ?? []) as WeeklyScoreRow[],
+  };
+}
+
+function aggregateStandings(
+  teams: TeamRow[],
+  scoreRows: WeeklyScoreRow[],
+  throughWeek?: number,
+): SeasonStanding[] {
   const scoresByWeek = new Map<number, TeamScore[]>();
-  for (const row of (scoreRows ?? []) as WeeklyScoreRow[]) {
+  for (const row of scoreRows) {
+    if (throughWeek !== undefined && row.week > throughWeek) continue;
+
     const weekScores = scoresByWeek.get(row.week) ?? [];
     weekScores.push({ teamId: row.team_id, totalPoints: row.total_points });
     scoresByWeek.set(row.week, weekScores);
@@ -112,4 +123,48 @@ export async function computeSeasonStandings(
   });
 
   return standings;
+}
+
+export async function computeSeasonStandings(
+  leagueId: number,
+): Promise<SeasonStanding[]> {
+  const { teams, scoreRows } = await fetchTeamsAndScores(leagueId);
+  return aggregateStandings(teams, scoreRows);
+}
+
+export type Trend = "up" | "down" | "flat" | null;
+
+export interface SeasonStandingWithTrend extends SeasonStanding {
+  trend: Trend;
+}
+
+export async function getSeasonStandingsWithTrend(
+  leagueId: number,
+): Promise<SeasonStandingWithTrend[]> {
+  const { teams, scoreRows } = await fetchTeamsAndScores(leagueId);
+  const standings = aggregateStandings(teams, scoreRows);
+
+  const maxWeek = scoreRows.reduce((max, row) => Math.max(max, row.week), 0);
+
+  if (maxWeek <= 1) {
+    return standings.map((standing) => ({ ...standing, trend: null }));
+  }
+
+  const priorStandings = aggregateStandings(teams, scoreRows, maxWeek - 1);
+  const priorRankByTeam = new Map(
+    priorStandings.map((standing) => [standing.teamId, standing.rank]),
+  );
+
+  return standings.map((standing) => {
+    const priorRank = priorRankByTeam.get(standing.teamId);
+    let trend: Trend = null;
+
+    if (priorRank !== undefined) {
+      if (standing.rank < priorRank) trend = "up";
+      else if (standing.rank > priorRank) trend = "down";
+      else trend = "flat";
+    }
+
+    return { ...standing, trend };
+  });
 }
