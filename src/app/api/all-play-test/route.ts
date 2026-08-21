@@ -1,0 +1,64 @@
+import { NextResponse } from "next/server";
+import { getWeekScores } from "@/lib/espn/client";
+import { EspnAuthError } from "@/lib/espn/errors";
+import { computeAllPlayRecords } from "@/lib/all-play/compute";
+
+export async function GET(request: Request) {
+  try {
+    const leagueId = Number(process.env.LEAGUE_ID);
+    const { searchParams } = new URL(request.url);
+    const seasonOverride = searchParams.get("season");
+    const season = seasonOverride ? Number(seasonOverride) : Number(process.env.SEASON);
+
+    if (!leagueId || !season) {
+      return NextResponse.json(
+        { status: "error", message: "Missing LEAGUE_ID or SEASON env vars." },
+        { status: 500 },
+      );
+    }
+
+    const weekParam = searchParams.get("week");
+    const week = Number(weekParam);
+
+    if (!weekParam || !Number.isInteger(week) || week < 1) {
+      return NextResponse.json(
+        {
+          status: "error",
+          message:
+            "Missing or invalid 'week' query param — expected a positive integer, e.g. ?week=1.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const weekScores = await getWeekScores(leagueId, season, week);
+    const records = computeAllPlayRecords(weekScores.teamScores);
+
+    return NextResponse.json({
+      status: "ok",
+      week: weekScores.week,
+      isCompleted: weekScores.isCompleted,
+      teamScores: weekScores.teamScores,
+      records,
+    });
+  } catch (err) {
+    if (err instanceof EspnAuthError) {
+      console.error("ESPN auth error:", err.message);
+      return NextResponse.json(
+        {
+          status: "error",
+          code: "espn_auth_error",
+          message: "Someone tell Mike to update the ESPN cookie so I can fetch scores",
+        },
+        { status: 502 },
+      );
+    }
+    return NextResponse.json(
+      {
+        status: "error",
+        message: err instanceof Error ? err.message : "Unknown error",
+      },
+      { status: 500 },
+    );
+  }
+}
