@@ -1,3 +1,5 @@
+import { EspnAuthError } from "./errors";
+
 export interface EspnTeam {
   id: number;
   name: string;
@@ -61,7 +63,7 @@ function getEspnCookieHeader(): string {
   const swid = process.env.ESPN_SWID;
 
   if (!espnS2 || !swid) {
-    throw new Error(
+    throw new EspnAuthError(
       "Missing ESPN auth env vars: espn_s2 and ESPN_SWID must be set.",
     );
   }
@@ -87,7 +89,7 @@ async function fetchLeagueData(
   });
 
   if (response.status === 401 || response.status === 403) {
-    throw new Error(
+    throw new EspnAuthError(
       "ESPN API auth failed (401/403) — espn_s2/ESPN_SWID cookies are likely expired or invalid.",
     );
   }
