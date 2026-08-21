@@ -1,10 +1,7 @@
 import { FreshnessIndicator } from "@/components/FreshnessIndicator";
 import { WeekSelector } from "@/components/WeekSelector";
+import { formatRecord } from "@/lib/all-play/format";
 import { getLeagueDbId, getWeekData } from "@/lib/all-play/week";
-
-function formatRecord(wins: number, losses: number, ties: number): string {
-  return ties > 0 ? `${wins}-${losses}-${ties}` : `${wins}-${losses}`;
-}
 
 export default async function Home({
   searchParams,
