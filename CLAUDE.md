@@ -48,11 +48,22 @@ it has the full reasoning behind each decision, not just the conclusion.
 - No historical backfill. The app only tracks weeks from whenever it's
   launched forward.
 - Open access — no auth/login gate on the app itself.
-- Scheduling is a single Vercel Hobby cron (`vercel.json`), 1x/day
-  overnight, plus a manual "Refresh now" endpoint for on-demand updates
-  during game days. If the Vercel plan is upgraded to Pro, cron frequency
-  may increase later — structure `vercel.json` so that's a small change,
-  not a rework.
+- Refresh strategy is stale-while-revalidate with a shared, global cooldown
+  (not per-user) — a cooldown-gated staleness check (C5) compares `now()`
+  to `last_attempted_at` and only triggers ingestion (C2) if a cooldown
+  window (default 3 min, configurable via env var) has elapsed. Concurrent
+  requests during the cooldown all read existing data rather than each
+  triggering their own ESPN call. E6 is a shared "last updated" indicator +
+  refresh control, used on all three tabs, that shows staleness and lets
+  the user trigger C5's check on demand — if clicked mid-cooldown it shows
+  a countdown/disabled state, not a silent no-op. E1–E3 page loads trigger
+  C5 via E6 rather than polling per-tab. There is no standalone "Refresh
+  now" endpoint (D2) — it's fully absorbed into C5 + E6, don't build it
+  separately. The Vercel Hobby cron (`vercel.json`, D1) is now a fallback
+  safety net only — it guarantees data can't go stale indefinitely if
+  nobody visits the page, but is not the primary freshness mechanism. If
+  the Vercel plan is upgraded to Pro, cron frequency may increase later —
+  structure `vercel.json` so that's a small change, not a rework.
 - Visual direction is "dark mode sports broadcast" (ESPN/NFL RedZone
   feel) — full creative brief (palette, type, layout, motion) is in the
   backlog doc. Build to it from the first pass on any UI story, don't
@@ -78,6 +89,9 @@ requirement — use judgment.
   are introduced.
 - **No `all_play_results` table** and **no auth system** — flag it to Mike
   if a story seems to need either; don't add either unilaterally.
+- **No standalone "Refresh now" endpoint (D2)** — it was removed and
+  absorbed into C5 (cooldown-gated ingestion check) + E6 (shared refresh
+  control). Don't rebuild it as a separate route.
 
 ## Testing against real ESPN data
 
