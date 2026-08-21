@@ -22,6 +22,17 @@ export interface LeagueMetadata {
   schedule: EspnMatchup[];
 }
 
+export interface TeamWeekScore {
+  teamId: number;
+  totalPoints: number;
+}
+
+export interface WeekScores {
+  week: number;
+  isCompleted: boolean;
+  teamScores: TeamWeekScore[];
+}
+
 interface EspnTeamResponse {
   id: number;
   name?: string;
@@ -63,10 +74,10 @@ function resolveTeamName(team: EspnTeamResponse): string {
   return `${team.location ?? ""} ${team.nickname ?? ""}`.trim();
 }
 
-export async function getLeagueMetadata(
+async function fetchLeagueData(
   leagueId: number,
   season: number,
-): Promise<LeagueMetadata> {
+): Promise<EspnLeagueResponse> {
   const url =
     `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${season}` +
     `/segments/0/leagues/${leagueId}?view=mTeam&view=mSettings&view=mMatchupScore`;
@@ -87,7 +98,21 @@ export async function getLeagueMetadata(
     );
   }
 
-  const data: EspnLeagueResponse = await response.json();
+  return response.json();
+}
+
+function mapMatchupTeam(
+  team: { teamId: number; totalPoints?: number } | undefined,
+): TeamWeekScore | null {
+  if (!team) return null;
+  return { teamId: team.teamId, totalPoints: team.totalPoints ?? 0 };
+}
+
+export async function getLeagueMetadata(
+  leagueId: number,
+  season: number,
+): Promise<LeagueMetadata> {
+  const data = await fetchLeagueData(leagueId, season);
 
   const teams: EspnTeam[] = data.teams.map((team) => ({
     id: team.id,
@@ -98,21 +123,35 @@ export async function getLeagueMetadata(
 
   const schedule: EspnMatchup[] = data.schedule.map((matchup) => ({
     matchupPeriodId: matchup.matchupPeriodId,
-    home: {
-      teamId: matchup.home.teamId,
-      totalPoints: matchup.home.totalPoints ?? 0,
-    },
-    away: matchup.away
-      ? {
-          teamId: matchup.away.teamId,
-          totalPoints: matchup.away.totalPoints ?? 0,
-        }
-      : null,
+    home: mapMatchupTeam(matchup.home) ?? { teamId: matchup.home.teamId, totalPoints: 0 },
+    away: mapMatchupTeam(matchup.away),
   }));
 
   return {
     teams,
     currentWeek: data.status.currentMatchupPeriod,
     schedule,
+  };
+}
+
+export async function getWeekScores(
+  leagueId: number,
+  season: number,
+  week: number,
+): Promise<WeekScores> {
+  const data = await fetchLeagueData(leagueId, season);
+
+  const teamScores: TeamWeekScore[] = data.schedule
+    .filter((matchup) => matchup.matchupPeriodId === week)
+    .flatMap((matchup) =>
+      [mapMatchupTeam(matchup.home), mapMatchupTeam(matchup.away)].filter(
+        (team): team is TeamWeekScore => team !== null,
+      ),
+    );
+
+  return {
+    week,
+    isCompleted: week < data.status.currentMatchupPeriod,
+    teamScores,
   };
 }

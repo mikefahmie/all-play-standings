@@ -4,12 +4,16 @@ Guidance for Claude Code when working in this repository.
 
 ## Project
 
-An all-play fantasy football standings app for a private 11-team ESPN Fantasy
-league (league ID `33257291`, 2026 season, top 6 make playoffs, seeds 1–2
-get a bye). Instead of showing each team's record against only its scheduled
-opponent, the app computes an **all-play record**: each team's weekly score
-compared against every other team's score. Three views: Week, Season
-Standings, Playoff Bracket.
+An all-play fantasy football standings app for a private ESPN Fantasy league
+(league ID `33257291`, 2026 season, top 6 make playoffs, seeds 1–2 get a
+bye). The league currently shows 12 teams (offseason roster) and is
+expected to settle at 11 teams once the season starts — don't hardcode a
+team count anywhere; derive it from the ESPN API response so the app works
+correctly at either size (or any other size, if the league changes again).
+Instead of showing each team's record against only its scheduled opponent,
+the app computes an **all-play record**: each team's weekly score compared
+against every other team's score. Three views: Week, Season Standings,
+Playoff Bracket.
 
 This is a proof of concept for a single family league — favor simple,
 working solutions over speculative generality. The one exception: every
@@ -74,6 +78,20 @@ requirement — use judgment.
   are introduced.
 - **No `all_play_results` table** and **no auth system** — flag it to Mike
   if a story seems to need either; don't add either unilaterally.
+
+## Testing against real ESPN data
+
+The 2026 season is in preseason (or early season) for a while yet, so
+`SEASON=2026` may return an in-progress week with all-zero scores and no
+completed weeks — not useful for verifying scoring logic end-to-end. The
+same league ID (`33257291`) has a completed 2025 season with real final
+scores for every week. When a story needs verification against real,
+nonzero, completed-week data (box scores, all-play calculations, season
+standings, etc.), temporarily call the ESPN client with `season: 2025`
+instead of reading `process.env.SEASON`, to get real data to check against
+— then confirm the story also runs cleanly against the live 2026 season
+before wrapping up. Also re-confirm the current 2026 team count each time
+(see league size note above) since it may still be settling.
 
 ## Story wrap-up procedure
 

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getLeagueMetadata } from "@/lib/espn/client";
+import { getWeekScores } from "@/lib/espn/client";
 
 export async function GET(request: Request) {
   try {
@@ -15,8 +15,22 @@ export async function GET(request: Request) {
       );
     }
 
-    const metadata = await getLeagueMetadata(leagueId, season);
-    return NextResponse.json({ status: "ok", ...metadata });
+    const weekParam = searchParams.get("week");
+    const week = Number(weekParam);
+
+    if (!weekParam || !Number.isInteger(week) || week < 1) {
+      return NextResponse.json(
+        {
+          status: "error",
+          message:
+            "Missing or invalid 'week' query param — expected a positive integer, e.g. ?week=1.",
+        },
+        { status: 400 },
+      );
+    }
+
+    const weekScores = await getWeekScores(leagueId, season, week);
+    return NextResponse.json({ status: "ok", ...weekScores });
   } catch (err) {
     return NextResponse.json(
       {
