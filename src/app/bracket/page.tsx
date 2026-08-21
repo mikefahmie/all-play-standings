@@ -14,7 +14,7 @@ export default async function Bracket() {
   const seeds = standings && standings.length >= 6 ? standings.slice(0, 6) : null;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 bg-background px-6 py-8 font-sans">
+    <div className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 font-sans sm:px-6 sm:py-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold tracking-tight text-foreground">
           Playoff Bracket

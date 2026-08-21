@@ -5,6 +5,7 @@ export interface WeekTeamResult {
   teamId: number;
   teamName: string;
   abbrev: string;
+  logoUrl: string | null;
   totalPoints: number;
   wins: number;
   losses: number;
@@ -22,6 +23,7 @@ interface TeamRow {
   id: number;
   name: string;
   abbrev: string;
+  logo_url: string | null;
 }
 
 interface WeeklyScoreRow {
@@ -55,7 +57,7 @@ export async function getWeekData(
 
   const { data: teamRows, error: teamsError } = await supabase
     .from("teams")
-    .select("id, name, abbrev")
+    .select("id, name, abbrev, logo_url")
     .eq("league_id", leagueId);
 
   if (teamsError) {
@@ -107,6 +109,7 @@ export async function getWeekData(
         teamId: record.teamId,
         teamName: team?.name ?? "Unknown",
         abbrev: team?.abbrev ?? "???",
+        logoUrl: team?.logo_url ?? null,
         totalPoints: pointsByTeam.get(record.teamId) ?? 0,
         wins: record.wins,
         losses: record.losses,

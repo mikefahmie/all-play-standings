@@ -5,6 +5,7 @@ export interface SeasonStanding {
   teamId: number;
   teamName: string;
   abbrev: string;
+  logoUrl: string | null;
   wins: number;
   losses: number;
   ties: number;
@@ -23,6 +24,7 @@ interface TeamRow {
   id: number;
   name: string;
   abbrev: string;
+  logo_url: string | null;
 }
 
 async function fetchTeamsAndScores(
@@ -32,7 +34,7 @@ async function fetchTeamsAndScores(
 
   const { data: teamRows, error: teamsError } = await supabase
     .from("teams")
-    .select("id, name, abbrev")
+    .select("id, name, abbrev, logo_url")
     .eq("league_id", leagueId);
 
   if (teamsError) {
@@ -104,6 +106,7 @@ function aggregateStandings(
       teamId: team.id,
       teamName: team.name,
       abbrev: team.abbrev,
+      logoUrl: team.logo_url,
       wins: totalsEntry.wins,
       losses: totalsEntry.losses,
       ties: totalsEntry.ties,

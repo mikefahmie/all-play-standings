@@ -1,6 +1,6 @@
 import { FreshnessIndicator } from "@/components/FreshnessIndicator";
+import { WeekCard, WeekRow } from "@/components/WeekRow";
 import { WeekSelector } from "@/components/WeekSelector";
-import { formatRecord } from "@/lib/all-play/format";
 import { getLeagueDbId, getWeekData } from "@/lib/all-play/week";
 
 export default async function Home({
@@ -22,7 +22,7 @@ export default async function Home({
     : null;
 
   return (
-    <div className="flex flex-1 flex-col gap-6 bg-background px-6 py-8 font-sans">
+    <div className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 font-sans sm:px-6 sm:py-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {weekData ? (
@@ -56,31 +56,27 @@ export default async function Home({
       </div>
 
       {weekData ? (
-        <table className="w-full border-collapse text-left">
-          <thead>
-            <tr className="border-b border-divider text-xs uppercase tracking-wide text-muted">
-              <th className="py-2 font-semibold">Team</th>
-              <th className="py-2 text-right font-semibold">Record</th>
-              <th className="py-2 text-right font-semibold">Score</th>
-            </tr>
-          </thead>
-          <tbody>
-            {weekData.results.map((team) => (
-              <tr key={team.teamId} className="border-b border-divider">
-                <td className="py-3">
-                  <span className="font-semibold text-foreground">{team.teamName}</span>
-                  <span className="ml-2 text-xs text-muted">{team.abbrev}</span>
-                </td>
-                <td className="py-3 text-right font-mono tabular-nums text-foreground">
-                  {formatRecord(team.wins, team.losses, team.ties)}
-                </td>
-                <td className="py-3 text-right font-mono tabular-nums font-bold text-foreground">
-                  {team.totalPoints.toFixed(2)}
-                </td>
+        <>
+          <table className="hidden w-full border-collapse text-left md:table">
+            <thead>
+              <tr className="border-b border-divider text-xs uppercase tracking-wide text-muted">
+                <th className="py-2 font-semibold">Team</th>
+                <th className="py-2 text-right font-semibold">Record</th>
+                <th className="py-2 text-right font-semibold">Score</th>
               </tr>
+            </thead>
+            <tbody>
+              {weekData.results.map((team) => (
+                <WeekRow key={team.teamId} team={team} />
+              ))}
+            </tbody>
+          </table>
+          <div className="flex flex-col gap-2 md:hidden">
+            {weekData.results.map((team) => (
+              <WeekCard key={team.teamId} team={team} />
             ))}
-          </tbody>
-        </table>
+          </div>
+        </>
       ) : (
         <p className="text-lg text-muted">
           No data yet — hang tight while the first refresh pulls scores in.

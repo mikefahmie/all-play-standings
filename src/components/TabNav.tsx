@@ -13,7 +13,7 @@ export function TabNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="flex items-center gap-6 border-b border-divider px-6 py-4 font-sans">
+    <nav className="flex flex-wrap items-center gap-x-6 gap-y-2 border-b border-divider px-4 py-4 font-sans sm:px-6">
       {TABS.map((tab) => {
         const active = pathname === tab.href;
         return (

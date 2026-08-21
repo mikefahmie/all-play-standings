@@ -1,3 +1,4 @@
+import { TeamLogo } from "@/components/TeamLogo";
 import { formatRecord } from "@/lib/all-play/format";
 import type { SeasonStanding } from "@/lib/all-play/season";
 
@@ -56,6 +57,7 @@ function ByeCard({
       <span className="font-mono text-xl font-bold tabular-nums text-accent">
         {seed}
       </span>
+      <TeamLogo logoUrl={standing.logoUrl} abbrev={standing.abbrev} size={24} />
       <div className="min-w-0 flex-1">
         <div className="truncate font-semibold text-foreground">
           {standing.teamName}
@@ -90,6 +92,7 @@ function MatchupCard({
           <span className="font-mono text-sm font-bold tabular-nums text-accent">
             {seed}
           </span>
+          <TeamLogo logoUrl={standing.logoUrl} abbrev={standing.abbrev} size={16} />
           <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
             {standing.teamName}
           </span>
@@ -128,6 +131,7 @@ function TbdMatchupCard({
           <span className="font-mono text-sm font-bold tabular-nums text-accent">
             {known.seed}
           </span>
+          <TeamLogo logoUrl={known.standing.logoUrl} abbrev={known.standing.abbrev} size={16} />
           <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
             {known.standing.teamName}
           </span>
@@ -238,6 +242,7 @@ function MobileByeRow({ seed, standing }: { seed: number; standing: SeasonStandi
       <span className="font-mono text-xl font-bold tabular-nums text-accent">
         {seed}
       </span>
+      <TeamLogo logoUrl={standing.logoUrl} abbrev={standing.abbrev} size={24} />
       <div className="min-w-0 flex-1">
         <div className="truncate font-semibold text-foreground">
           {standing.teamName}
@@ -259,6 +264,7 @@ function MobileMatchupRow({ topSide, bottomSide }: { topSide: Side; bottomSide: 
           <span className="font-mono text-sm font-bold tabular-nums text-accent">
             {seed}
           </span>
+          <TeamLogo logoUrl={standing.logoUrl} abbrev={standing.abbrev} size={16} />
           <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
             {standing.teamName}
           </span>
@@ -282,6 +288,7 @@ function MobileTbdRow({ label, known }: { label: string; known?: Side }) {
           <span className="font-mono text-sm font-bold tabular-nums text-accent">
             {known.seed}
           </span>
+          <TeamLogo logoUrl={known.standing.logoUrl} abbrev={known.standing.abbrev} size={16} />
           <span className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground">
             {known.standing.teamName}
           </span>
