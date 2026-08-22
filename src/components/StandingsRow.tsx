@@ -14,69 +14,6 @@ const TREND_COLOR = {
   flat: "text-muted",
 } as const;
 
-export function StandingsRow({
-  team,
-  isLastPlayoffSpot = false,
-}: {
-  team: SeasonStandingWithTrend;
-  isLastPlayoffSpot?: boolean;
-}) {
-  return (
-    <>
-      <tr
-        className={
-          isLastPlayoffSpot
-            ? "border-b-2 border-accent"
-            : "border-b border-divider"
-        }
-      >
-        <td className="py-3">
-          <span className="flex items-center gap-2">
-            <span className="font-mono text-xl font-bold tabular-nums text-foreground">
-              {team.rank}
-            </span>
-            {team.trend && (
-              <span
-                className={`text-sm ${TREND_COLOR[team.trend]}`}
-                aria-label={`Trend: ${team.trend}`}
-              >
-                {TREND_ARROW[team.trend]}
-              </span>
-            )}
-          </span>
-        </td>
-        <td className="py-3">
-          <span className="flex items-center gap-3">
-            <TeamLogo logoUrl={team.logoUrl} abbrev={team.abbrev} />
-            <span>
-              <span className="font-semibold text-foreground">{team.teamName}</span>
-              <span className="ml-2 text-xs text-muted">{team.abbrev}</span>
-            </span>
-          </span>
-        </td>
-        <td className="py-3 text-right font-mono text-lg tabular-nums font-bold text-foreground">
-          {formatRecord(team.wins, team.losses, team.ties)}
-        </td>
-        <td className="py-3 text-right font-mono text-sm tabular-nums text-muted">
-          {formatWinPct(team.winPct)}
-        </td>
-        <td className="py-3 text-right font-mono text-sm tabular-nums text-muted">
-          {formatPoints(team.totalPoints)}
-        </td>
-      </tr>
-      {isLastPlayoffSpot && (
-        <tr aria-hidden="true">
-          <td colSpan={5} className="pb-2">
-            <span className="text-[10px] font-bold uppercase tracking-wide text-accent">
-              Playoff cutoff
-            </span>
-          </td>
-        </tr>
-      )}
-    </>
-  );
-}
-
 export function StandingsCard({
   team,
   isLastPlayoffSpot = false,
@@ -86,10 +23,9 @@ export function StandingsCard({
 }) {
   return (
     <>
-      <div className="flex items-center gap-3 rounded border border-divider bg-surface px-4 py-3">
-        <TeamLogo logoUrl={team.logoUrl} abbrev={team.abbrev} />
+      <div className="flex items-center gap-3 rounded border border-divider bg-[image:var(--gradient-surface)] px-4 py-3">
         <span className="flex items-center gap-1.5">
-          <span className="font-mono text-xl font-bold tabular-nums text-foreground">
+          <span className="font-display text-2xl font-bold tabular-nums text-foreground">
             {team.rank}
           </span>
           {team.trend && (
@@ -102,16 +38,35 @@ export function StandingsCard({
           )}
         </span>
         <div className="min-w-0 flex-1">
-          <div className="truncate font-semibold text-foreground">{team.teamName}</div>
-          <div className="text-xs text-muted">{team.abbrev}</div>
+          <span className="flex items-center gap-3">
+            <TeamLogo logoUrl={team.logoUrl} abbrev={team.abbrev} />
+            <span className="min-w-0">
+              <span className="block truncate font-semibold text-foreground">
+                {team.teamName}
+              </span>
+              <span className="text-xs text-muted">{team.abbrev}</span>
+            </span>
+          </span>
         </div>
-        <div className="flex flex-col items-end gap-1">
-          <span className="font-mono text-xl font-bold tabular-nums text-foreground">
-            {formatRecord(team.wins, team.losses, team.ties)}
-          </span>
-          <span className="font-mono text-xs tabular-nums text-muted">
-            {formatWinPct(team.winPct)} · {formatPoints(team.totalPoints)} pts
-          </span>
+        <div className="flex shrink-0 items-end gap-4">
+          <div className="hidden flex-col items-end gap-0.5 sm:flex">
+            <span className="text-[10px] uppercase tracking-wide text-muted">Win%</span>
+            <span className="font-mono text-sm tabular-nums text-muted">
+              {formatWinPct(team.winPct)}
+            </span>
+          </div>
+          <div className="hidden flex-col items-end gap-0.5 sm:flex">
+            <span className="text-[10px] uppercase tracking-wide text-muted">Points</span>
+            <span className="font-mono text-sm tabular-nums text-muted">
+              {formatPoints(team.totalPoints)}
+            </span>
+          </div>
+          <div className="flex flex-col items-end gap-0.5">
+            <span className="text-[10px] uppercase tracking-wide text-muted">Record</span>
+            <span className="font-display text-3xl font-bold tabular-nums text-foreground">
+              {formatRecord(team.wins, team.losses, team.ties)}
+            </span>
+          </div>
         </div>
       </div>
       {isLastPlayoffSpot && (

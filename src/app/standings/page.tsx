@@ -1,5 +1,5 @@
 import { FreshnessIndicator } from "@/components/FreshnessIndicator";
-import { StandingsCard, StandingsRow } from "@/components/StandingsRow";
+import { StandingsCard } from "@/components/StandingsRow";
 import { getSeasonStandingsWithTrend } from "@/lib/all-play/season";
 import { getLeagueDbId } from "@/lib/all-play/week";
 
@@ -26,37 +26,15 @@ export default async function Standings() {
       </div>
 
       {standings && standings.length > 0 ? (
-        <>
-          <table className="hidden w-full border-collapse text-left md:table">
-            <thead>
-              <tr className="border-b border-divider text-xs uppercase tracking-wide text-muted">
-                <th className="py-2 font-semibold">Rank</th>
-                <th className="py-2 font-semibold">Team</th>
-                <th className="py-2 text-right font-semibold">Record</th>
-                <th className="py-2 text-right font-semibold">Win%</th>
-                <th className="py-2 text-right font-semibold">Points</th>
-              </tr>
-            </thead>
-            <tbody>
-              {standings.map((team) => (
-                <StandingsRow
-                  key={team.teamId}
-                  team={team}
-                  isLastPlayoffSpot={team.rank === PLAYOFF_SPOTS}
-                />
-              ))}
-            </tbody>
-          </table>
-          <div className="flex flex-col gap-2 md:hidden">
-            {standings.map((team) => (
-              <StandingsCard
-                key={team.teamId}
-                team={team}
-                isLastPlayoffSpot={team.rank === PLAYOFF_SPOTS}
-              />
-            ))}
-          </div>
-        </>
+        <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
+          {standings.map((team) => (
+            <StandingsCard
+              key={team.teamId}
+              team={team}
+              isLastPlayoffSpot={team.rank === PLAYOFF_SPOTS}
+            />
+          ))}
+        </div>
       ) : (
         <p className="text-lg text-muted">
           No data yet — hang tight while the first refresh pulls scores in.

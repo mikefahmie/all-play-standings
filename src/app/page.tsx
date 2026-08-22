@@ -1,5 +1,5 @@
 import { FreshnessIndicator } from "@/components/FreshnessIndicator";
-import { WeekCard, WeekRow } from "@/components/WeekRow";
+import { WeekCard } from "@/components/WeekRow";
 import { WeekSelector } from "@/components/WeekSelector";
 import { getLeagueDbId, getWeekData } from "@/lib/all-play/week";
 
@@ -31,9 +31,9 @@ export default async function Home({
                 Week {weekData.week}
               </h1>
               {!weekData.isCompleted && (
-                <span className="flex items-center rounded bg-divider px-2 py-1 text-xs font-bold uppercase tracking-wide text-live">
+                <span className="flex items-center rounded bg-divider px-2 py-1 text-xs font-bold uppercase tracking-wide text-live shadow-[var(--shadow-glow-live)]">
                   <span
-                    className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-live"
+                    className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-live shadow-[var(--shadow-glow-live)]"
                     aria-hidden="true"
                   />
                   Live
@@ -56,27 +56,15 @@ export default async function Home({
       </div>
 
       {weekData ? (
-        <>
-          <table className="hidden w-full border-collapse text-left md:table">
-            <thead>
-              <tr className="border-b border-divider text-xs uppercase tracking-wide text-muted">
-                <th className="py-2 font-semibold">Team</th>
-                <th className="py-2 text-right font-semibold">Record</th>
-                <th className="py-2 text-right font-semibold">Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {weekData.results.map((team) => (
-                <WeekRow key={team.teamId} team={team} />
-              ))}
-            </tbody>
-          </table>
-          <div className="flex flex-col gap-2 md:hidden">
-            {weekData.results.map((team) => (
-              <WeekCard key={team.teamId} team={team} />
-            ))}
-          </div>
-        </>
+        <div
+          className={`mx-auto flex w-full max-w-2xl flex-col gap-2 ${
+            weekData.isCompleted ? "opacity-90 saturate-75" : ""
+          }`}
+        >
+          {weekData.results.map((team) => (
+            <WeekCard key={team.teamId} team={team} />
+          ))}
+        </div>
       ) : (
         <p className="text-lg text-muted">
           No data yet — hang tight while the first refresh pulls scores in.

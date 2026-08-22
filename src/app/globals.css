@@ -12,6 +12,10 @@
   --color-broadcast-divider: #1f2733;
   --color-broadcast-error: #f87171;
   --color-broadcast-positive: #4ade80;
+
+  --shadow-glow-live: 0 0 0 1px color-mix(in oklab, var(--color-broadcast-live) 45%, transparent),
+                      0 0 14px -3px color-mix(in oklab, var(--color-broadcast-live) 70%, transparent);
+  --gradient-surface: linear-gradient(180deg, color-mix(in oklab, var(--color-broadcast-surface) 100%, white 3%), var(--color-broadcast-surface));
 }
 
 @theme inline {
@@ -27,6 +31,7 @@
   --color-positive: var(--color-broadcast-positive);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-oswald), var(--font-mono);
 }
 
 body {

@@ -58,7 +58,7 @@ export function FreshnessIndicator() {
 
   return (
     <div className="flex flex-col items-center gap-2 font-sans">
-      <div className="flex items-center gap-3 rounded border border-divider bg-surface px-4 py-2">
+      <div className="flex items-center gap-3 rounded border border-divider bg-[image:var(--gradient-surface)] px-4 py-2">
         <span className="text-sm text-muted">
           Last updated{" "}
           <span className="font-mono tabular-nums text-foreground">
@@ -80,7 +80,7 @@ export function FreshnessIndicator() {
         >
           {onCooldown && (
             <span
-              className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-live align-middle"
+              className="mr-1.5 inline-block h-2 w-2 animate-pulse rounded-full bg-live align-middle shadow-[var(--shadow-glow-live)]"
               aria-hidden="true"
             />
           )}

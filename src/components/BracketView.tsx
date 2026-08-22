@@ -6,7 +6,7 @@ type Side = { seed: number; standing: SeasonStanding };
 
 const CARD_H = 72;
 const MATCHUP_H = 88;
-const CARD_W = 208;
+const CARD_W = 232;
 const COL_GAP = 72;
 const SLOT_GAP = 24;
 
@@ -52,9 +52,9 @@ function ByeCard({
   return (
     <div
       style={{ left: COL1_X, top: y, width: CARD_W, height: CARD_H }}
-      className="absolute flex items-center gap-3 rounded border border-divider bg-surface px-4"
+      className="absolute flex items-center gap-3 rounded border border-divider bg-[image:var(--gradient-surface)] px-4"
     >
-      <span className="font-mono text-xl font-bold tabular-nums text-accent">
+      <span className="font-display text-2xl font-bold tabular-nums text-accent">
         {seed}
       </span>
       <TeamLogo logoUrl={standing.logoUrl} abbrev={standing.abbrev} size={24} />
@@ -85,7 +85,7 @@ function MatchupCard({
   return (
     <div
       style={{ left: x, top: y, width: CARD_W, height: MATCHUP_H }}
-      className="absolute flex flex-col justify-center gap-1 rounded border border-divider bg-surface px-4 py-2"
+      className="absolute flex flex-col justify-center gap-1 rounded border border-divider bg-[image:var(--gradient-surface)] px-4 py-2"
     >
       {[topSide, bottomSide].map(({ seed, standing }) => (
         <div key={seed} className="flex items-center gap-2">
@@ -238,8 +238,8 @@ function DesktopBracket({
 
 function MobileByeRow({ seed, standing }: { seed: number; standing: SeasonStanding }) {
   return (
-    <div className="flex items-center gap-3 rounded border border-divider bg-surface px-4 py-3">
-      <span className="font-mono text-xl font-bold tabular-nums text-accent">
+    <div className="flex items-center gap-3 rounded border border-divider bg-[image:var(--gradient-surface)] px-4 py-3">
+      <span className="font-display text-2xl font-bold tabular-nums text-accent">
         {seed}
       </span>
       <TeamLogo logoUrl={standing.logoUrl} abbrev={standing.abbrev} size={24} />
@@ -258,7 +258,7 @@ function MobileByeRow({ seed, standing }: { seed: number; standing: SeasonStandi
 
 function MobileMatchupRow({ topSide, bottomSide }: { topSide: Side; bottomSide: Side }) {
   return (
-    <div className="flex flex-col gap-1 rounded border border-divider bg-surface px-4 py-3">
+    <div className="flex flex-col gap-1 rounded border border-divider bg-[image:var(--gradient-surface)] px-4 py-3">
       {[topSide, bottomSide].map(({ seed, standing }) => (
         <div key={seed} className="flex items-center gap-2">
           <span className="font-mono text-sm font-bold tabular-nums text-accent">
