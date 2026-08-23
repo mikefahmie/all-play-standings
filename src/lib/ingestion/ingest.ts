@@ -1,11 +1,11 @@
-import { getLeagueMetadata, getWeekScores } from "@/lib/espn/client";
+import { getAllWeekScores, getLeagueMetadata } from "@/lib/espn/client";
 import { EspnAuthError } from "@/lib/espn/errors";
 import { getSupabaseClient } from "@/lib/supabase/server";
 
 export type IngestResult =
   | {
       status: "ok";
-      week: number;
+      weeksUpserted: number[];
       teamsUpserted: number;
       scoresUpserted: number;
     }
@@ -21,7 +21,7 @@ function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : "Unknown error";
 }
 
-export async function ingestCurrentWeek(
+export async function ingestAllWeeks(
   leagueId: number,
   season: number,
 ): Promise<IngestResult> {
@@ -58,7 +58,7 @@ export async function ingestCurrentWeek(
 
   try {
     const metadata = await getLeagueMetadata(leagueId, season);
-    const weekScores = await getWeekScores(leagueId, season, metadata.currentWeek);
+    const allWeekScores = await getAllWeekScores(leagueId, season);
 
     const { data: upsertedTeams, error: teamsError } = await supabase
       .from("teams")
@@ -83,20 +83,23 @@ export async function ingestCurrentWeek(
       upsertedTeams.map((team) => [team.espn_team_id as number, team.id as number]),
     );
 
-    const scoreRows = weekScores.teamScores.map((score) => {
-      const teamId = teamIdByEspnId.get(score.teamId);
-      if (teamId === undefined) {
-        throw new Error(`No team row found for ESPN team ${score.teamId}`);
-      }
-      return {
-        league_id: internalLeagueId,
-        team_id: teamId,
-        week: weekScores.week,
-        total_points: score.totalPoints,
-        is_completed: weekScores.isCompleted,
-        updated_at: new Date().toISOString(),
-      };
-    });
+    const nowIso = new Date().toISOString();
+    const scoreRows = allWeekScores.flatMap((weekScores) =>
+      weekScores.teamScores.map((score) => {
+        const teamId = teamIdByEspnId.get(score.teamId);
+        if (teamId === undefined) {
+          throw new Error(`No team row found for ESPN team ${score.teamId}`);
+        }
+        return {
+          league_id: internalLeagueId,
+          team_id: teamId,
+          week: weekScores.week,
+          total_points: score.totalPoints,
+          is_completed: weekScores.isCompleted,
+          updated_at: nowIso,
+        };
+      }),
+    );
 
     const { error: scoresError } = await supabase
       .from("weekly_scores")
@@ -119,7 +122,7 @@ export async function ingestCurrentWeek(
 
     return {
       status: "ok",
-      week: weekScores.week,
+      weeksUpserted: allWeekScores.map((weekScores) => weekScores.week),
       teamsUpserted: upsertedTeams.length,
       scoresUpserted: scoreRows.length,
     };

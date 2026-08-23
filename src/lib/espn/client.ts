@@ -157,3 +157,29 @@ export async function getWeekScores(
     teamScores,
   };
 }
+
+export async function getAllWeekScores(
+  leagueId: number,
+  season: number,
+): Promise<WeekScores[]> {
+  const data = await fetchLeagueData(leagueId, season);
+
+  const scoresByWeek = new Map<number, TeamWeekScore[]>();
+  for (const matchup of data.schedule) {
+    const teamScores = [mapMatchupTeam(matchup.home), mapMatchupTeam(matchup.away)].filter(
+      (team): team is TeamWeekScore => team !== null,
+    );
+    if (teamScores.length === 0) continue;
+
+    const existing = scoresByWeek.get(matchup.matchupPeriodId) ?? [];
+    scoresByWeek.set(matchup.matchupPeriodId, existing.concat(teamScores));
+  }
+
+  return Array.from(scoresByWeek.entries())
+    .sort(([weekA], [weekB]) => weekA - weekB)
+    .map(([week, teamScores]) => ({
+      week,
+      isCompleted: week < data.status.currentMatchupPeriod,
+      teamScores,
+    }));
+}

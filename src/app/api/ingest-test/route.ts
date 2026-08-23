@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { ingestCurrentWeek } from "@/lib/ingestion/ingest";
+import { ingestAllWeeks } from "@/lib/ingestion/ingest";
 
 export async function GET(request: Request) {
   const leagueId = Number(process.env.LEAGUE_ID);
@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     );
   }
 
-  const result = await ingestCurrentWeek(leagueId, season);
+  const result = await ingestAllWeeks(leagueId, season);
 
   if (result.status === "error") {
     return NextResponse.json(result, { status: 502 });

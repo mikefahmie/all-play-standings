@@ -141,19 +141,14 @@ export interface SeasonStandingWithTrend extends SeasonStanding {
   trend: Trend;
 }
 
-export async function getSeasonStandingsWithTrend(
-  leagueId: number,
-): Promise<SeasonStandingWithTrend[]> {
-  const { teams, scoreRows } = await fetchTeamsAndScores(leagueId);
-  const standings = aggregateStandings(teams, scoreRows);
-
-  const maxWeek = scoreRows.reduce((max, row) => Math.max(max, row.week), 0);
-
-  if (maxWeek <= 1) {
+function attachTrend(
+  standings: SeasonStanding[],
+  priorStandings: SeasonStanding[] | null,
+): SeasonStandingWithTrend[] {
+  if (!priorStandings) {
     return standings.map((standing) => ({ ...standing, trend: null }));
   }
 
-  const priorStandings = aggregateStandings(teams, scoreRows, maxWeek - 1);
   const priorRankByTeam = new Map(
     priorStandings.map((standing) => [standing.teamId, standing.rank]),
   );
@@ -170,4 +165,37 @@ export async function getSeasonStandingsWithTrend(
 
     return { ...standing, trend };
   });
+}
+
+export interface SeasonStandingsResult {
+  standings: SeasonStandingWithTrend[];
+  standingsExcludingCurrentWeek: SeasonStandingWithTrend[] | null;
+  currentWeek: number;
+}
+
+export async function getSeasonStandingsWithTrend(
+  leagueId: number,
+): Promise<SeasonStandingsResult> {
+  const { teams, scoreRows } = await fetchTeamsAndScores(leagueId);
+  const currentWeek = scoreRows.reduce((max, row) => Math.max(max, row.week), 0);
+
+  const standings = aggregateStandings(teams, scoreRows);
+  const priorStandings =
+    currentWeek > 1 ? aggregateStandings(teams, scoreRows, currentWeek - 1) : null;
+
+  const standingsWithTrend = attachTrend(standings, priorStandings);
+
+  const standingsExcludingCurrentWeek =
+    currentWeek > 1
+      ? attachTrend(
+          priorStandings!,
+          currentWeek > 2 ? aggregateStandings(teams, scoreRows, currentWeek - 2) : null,
+        )
+      : null;
+
+  return {
+    standings: standingsWithTrend,
+    standingsExcludingCurrentWeek,
+    currentWeek,
+  };
 }

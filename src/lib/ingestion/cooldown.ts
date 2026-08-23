@@ -1,5 +1,5 @@
 import { getSupabaseClient } from "@/lib/supabase/server";
-import { ingestCurrentWeek, type IngestResult } from "./ingest";
+import { ingestAllWeeks, type IngestResult } from "./ingest";
 
 const DEFAULT_COOLDOWN_MS = 3 * 60 * 1000;
 
@@ -42,7 +42,7 @@ interface IngestionStateRow {
   last_error: string | null;
 }
 
-async function readIngestionState(
+export async function readIngestionState(
   supabase: ReturnType<typeof getSupabaseClient>,
   internalLeagueId: number,
 ): Promise<{ lastIngestedAt: string | null; lastError: string | null }> {
@@ -73,7 +73,7 @@ export async function checkAndTriggerIngestion(
     .single<LeagueRow>();
 
   if (!league) {
-    const ingestResult = await ingestCurrentWeek(leagueId, season);
+    const ingestResult = await ingestAllWeeks(leagueId, season);
 
     const { data: bootstrappedLeague } = await supabase
       .from("leagues")
@@ -124,7 +124,7 @@ export async function checkAndTriggerIngestion(
   }
 
   if (claimed && claimed.length > 0) {
-    const ingestResult = await ingestCurrentWeek(leagueId, season);
+    const ingestResult = await ingestAllWeeks(leagueId, season);
     const { lastIngestedAt, lastError } = await readIngestionState(
       supabase,
       internalLeagueId,
