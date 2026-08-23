@@ -35,6 +35,19 @@ export interface WeekScores {
   teamScores: TeamWeekScore[];
 }
 
+export interface BoxscorePlayer {
+  playerId: number;
+  fullName: string;
+  positionId: number;
+  proTeamId: number;
+  points: number;
+}
+
+export interface TeamBoxscore {
+  teamId: number;
+  players: BoxscorePlayer[];
+}
+
 interface EspnTeamResponse {
   id: number;
   name?: string;
@@ -44,10 +57,31 @@ interface EspnTeamResponse {
   logo?: string;
 }
 
+interface EspnRosterEntryResponse {
+  lineupSlotId: number;
+  playerId: number;
+  playerPoolEntry: {
+    appliedStatTotal?: number;
+    player: {
+      fullName: string;
+      defaultPositionId: number;
+      proTeamId: number;
+    };
+  };
+}
+
+interface EspnMatchupTeamResponse {
+  teamId: number;
+  totalPoints?: number;
+  rosterForCurrentScoringPeriod?: {
+    entries: EspnRosterEntryResponse[];
+  };
+}
+
 interface EspnMatchupResponse {
   matchupPeriodId: number;
-  home: { teamId: number; totalPoints?: number };
-  away?: { teamId: number; totalPoints?: number };
+  home: EspnMatchupTeamResponse;
+  away?: EspnMatchupTeamResponse;
 }
 
 interface EspnLeagueResponse {
@@ -57,6 +91,9 @@ interface EspnLeagueResponse {
     currentMatchupPeriod: number;
   };
 }
+
+const BENCH_SLOT_ID = 20;
+const IR_SLOT_ID = 21;
 
 function getEspnCookieHeader(): string {
   const espnS2 = process.env.espn_s2;
@@ -79,10 +116,11 @@ function resolveTeamName(team: EspnTeamResponse): string {
 async function fetchLeagueData(
   leagueId: number,
   season: number,
+  extraQuery = "",
 ): Promise<EspnLeagueResponse> {
   const url =
     `https://lm-api-reads.fantasy.espn.com/apis/v3/games/ffl/seasons/${season}` +
-    `/segments/0/leagues/${leagueId}?view=mTeam&view=mSettings&view=mMatchupScore`;
+    `/segments/0/leagues/${leagueId}?view=mTeam&view=mSettings&view=mMatchupScore${extraQuery}`;
 
   const response = await fetch(url, {
     headers: { Cookie: getEspnCookieHeader() },
@@ -182,4 +220,42 @@ export async function getAllWeekScores(
       isCompleted: week < data.status.currentMatchupPeriod,
       teamScores,
     }));
+}
+
+function mapBoxscorePlayers(
+  entries: EspnRosterEntryResponse[] | undefined,
+): BoxscorePlayer[] {
+  if (!entries) return [];
+
+  return entries
+    .filter(
+      (entry) => entry.lineupSlotId !== BENCH_SLOT_ID && entry.lineupSlotId !== IR_SLOT_ID,
+    )
+    .map((entry) => ({
+      playerId: entry.playerId,
+      fullName: entry.playerPoolEntry.player.fullName,
+      positionId: entry.playerPoolEntry.player.defaultPositionId,
+      proTeamId: entry.playerPoolEntry.player.proTeamId,
+      points: entry.playerPoolEntry.appliedStatTotal ?? 0,
+    }));
+}
+
+export async function getTeamBoxscore(
+  leagueId: number,
+  season: number,
+  week: number,
+  teamId: number,
+): Promise<TeamBoxscore | null> {
+  const data = await fetchLeagueData(leagueId, season, `&view=mBoxscore&scoringPeriodId=${week}`);
+
+  const matchups = data.schedule.filter((m) => m.matchupPeriodId === week);
+  const teamSide = matchups
+    .flatMap((m) => [m.home, m.away])
+    .find((side) => side?.teamId === teamId);
+  if (!teamSide) return null;
+
+  return {
+    teamId,
+    players: mapBoxscorePlayers(teamSide.rosterForCurrentScoringPeriod?.entries),
+  };
 }

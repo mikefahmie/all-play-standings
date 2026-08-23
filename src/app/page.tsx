@@ -2,6 +2,8 @@ import { FreshnessIndicator } from "@/components/FreshnessIndicator";
 import { WeekCard } from "@/components/WeekRow";
 import { WeekSelector } from "@/components/WeekSelector";
 import { getLeagueDbId, getWeekData } from "@/lib/all-play/week";
+import { readIngestionState } from "@/lib/ingestion/cooldown";
+import { getSupabaseClient } from "@/lib/supabase/server";
 
 export default async function Home({
   searchParams,
@@ -20,6 +22,11 @@ export default async function Home({
   const weekData = leagueDbId
     ? await getWeekData(leagueDbId, requestedWeek)
     : null;
+
+  const lastError =
+    !weekData && leagueDbId
+      ? (await readIngestionState(getSupabaseClient(), leagueDbId)).lastError
+      : null;
 
   return (
     <div className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 font-sans sm:px-6 sm:py-8">
@@ -62,9 +69,13 @@ export default async function Home({
           }`}
         >
           {weekData.results.map((team) => (
-            <WeekCard key={team.teamId} team={team} />
+            <WeekCard key={team.teamId} team={team} week={weekData.week} />
           ))}
         </div>
+      ) : lastError ? (
+        <p className="text-lg text-error" role="alert">
+          {lastError}
+        </p>
       ) : (
         <p className="text-lg text-muted">
           No data yet — hang tight while the first refresh pulls scores in.
