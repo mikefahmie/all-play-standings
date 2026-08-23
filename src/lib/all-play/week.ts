@@ -39,12 +39,16 @@ export async function getLeagueDbId(
 ): Promise<number | null> {
   const supabase = getSupabaseClient();
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("leagues")
     .select("id")
     .eq("espn_league_id", espnLeagueId)
     .eq("season", season)
     .single<{ id: number }>();
+
+  if (error && error.code !== "PGRST116") {
+    throw new Error(error.message);
+  }
 
   return data?.id ?? null;
 }

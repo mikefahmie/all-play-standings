@@ -2,6 +2,8 @@ import { BracketView } from "@/components/BracketView";
 import { FreshnessIndicator } from "@/components/FreshnessIndicator";
 import { computeSeasonStandings } from "@/lib/all-play/season";
 import { getLeagueDbId } from "@/lib/all-play/week";
+import { readIngestionState } from "@/lib/ingestion/cooldown";
+import { getSupabaseClient } from "@/lib/supabase/server";
 
 export default async function Bracket() {
   const leagueId = Number(process.env.LEAGUE_ID);
@@ -12,6 +14,11 @@ export default async function Bracket() {
 
   const standings = leagueDbId ? await computeSeasonStandings(leagueDbId) : null;
   const seeds = standings && standings.length >= 6 ? standings.slice(0, 6) : null;
+
+  const lastError =
+    !seeds && leagueDbId
+      ? (await readIngestionState(getSupabaseClient(), leagueDbId)).lastError
+      : null;
 
   return (
     <div className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 font-sans sm:px-6 sm:py-8">
@@ -24,6 +31,10 @@ export default async function Bracket() {
 
       {seeds ? (
         <BracketView seeds={seeds} />
+      ) : lastError ? (
+        <p className="text-lg text-error" role="alert">
+          {lastError}
+        </p>
       ) : (
         <p className="text-lg text-muted">
           No data yet — hang tight while the first refresh pulls scores in.
