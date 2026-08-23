@@ -46,11 +46,15 @@ export async function readIngestionState(
   supabase: ReturnType<typeof getSupabaseClient>,
   internalLeagueId: number,
 ): Promise<{ lastIngestedAt: string | null; lastError: string | null }> {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("ingestion_state")
     .select("last_ingested_at, last_error")
     .eq("league_id", internalLeagueId)
     .single<Pick<IngestionStateRow, "last_ingested_at" | "last_error">>();
+
+  if (error && error.code !== "PGRST116") {
+    throw new Error(error.message);
+  }
 
   return {
     lastIngestedAt: data?.last_ingested_at ?? null,

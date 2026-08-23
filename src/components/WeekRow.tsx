@@ -21,18 +21,28 @@ type BoxscoreState =
   | { status: "error"; message: string }
   | { status: "loaded"; players: BoxscorePlayerView[] };
 
-export function WeekCard({ team, week }: { team: WeekTeamResult; week: number }) {
+export function WeekCard({
+  team,
+  week,
+  isCurrentWeek,
+}: {
+  team: WeekTeamResult;
+  week: number;
+  isCurrentWeek: boolean;
+}) {
   const [expanded, setExpanded] = useState(false);
   const [boxscore, setBoxscore] = useState<BoxscoreState>({ status: "idle" });
 
   async function handleToggle() {
+    if (!isCurrentWeek) return;
+
     const next = !expanded;
     setExpanded(next);
 
     if (next) {
       setBoxscore({ status: "loading" });
       try {
-        const res = await fetch(`/api/boxscore?week=${week}&teamId=${team.teamId}`);
+        const res = await fetch(`/api/boxscore?week=${week}&teamId=${team.espnTeamId}`);
         const data = await res.json();
         if (!res.ok || data.status !== "ok") {
           setBoxscore({ status: "error", message: data.message ?? "Failed to load lineup." });
@@ -54,7 +64,9 @@ export function WeekCard({ team, week }: { team: WeekTeamResult; week: number })
         type="button"
         onClick={handleToggle}
         aria-expanded={expanded}
-        className="flex w-full items-center gap-3 px-4 py-3 text-left"
+        disabled={!isCurrentWeek}
+        title={isCurrentWeek ? undefined : "Lineup only available for the current week"}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left disabled:cursor-default"
       >
         <TeamLogo logoUrl={team.logoUrl} abbrev={team.abbrev} />
         <div className="min-w-0 flex-1">

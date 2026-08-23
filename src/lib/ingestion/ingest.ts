@@ -59,15 +59,9 @@ export async function ingestAllWeeks(
   try {
     const metadata = await getLeagueMetadata(leagueId, season);
     const allWeekScores = await getAllWeekScores(leagueId, season);
-
-    const { error: currentWeekError } = await supabase
-      .from("leagues")
-      .update({ current_week: metadata.currentWeek })
-      .eq("id", internalLeagueId);
-
-    if (currentWeekError) {
-      throw new Error(currentWeekError.message);
-    }
+    const playedWeekScores = allWeekScores.filter(
+      (weekScores) => weekScores.week <= metadata.currentWeek,
+    );
 
     const { data: upsertedTeams, error: teamsError } = await supabase
       .from("teams")
@@ -93,7 +87,7 @@ export async function ingestAllWeeks(
     );
 
     const nowIso = new Date().toISOString();
-    const scoreRows = allWeekScores.flatMap((weekScores) =>
+    const scoreRows = playedWeekScores.flatMap((weekScores) =>
       weekScores.teamScores.map((score) => {
         const teamId = teamIdByEspnId.get(score.teamId);
         if (teamId === undefined) {
@@ -118,6 +112,15 @@ export async function ingestAllWeeks(
       throw new Error(scoresError.message);
     }
 
+    const { error: currentWeekError } = await supabase
+      .from("leagues")
+      .update({ current_week: metadata.currentWeek })
+      .eq("id", internalLeagueId);
+
+    if (currentWeekError) {
+      throw new Error(currentWeekError.message);
+    }
+
     await supabase
       .from("ingestion_state")
       .upsert(
@@ -131,7 +134,7 @@ export async function ingestAllWeeks(
 
     return {
       status: "ok",
-      weeksUpserted: allWeekScores.map((weekScores) => weekScores.week),
+      weeksUpserted: playedWeekScores.map((weekScores) => weekScores.week),
       teamsUpserted: upsertedTeams.length,
       scoresUpserted: scoreRows.length,
     };

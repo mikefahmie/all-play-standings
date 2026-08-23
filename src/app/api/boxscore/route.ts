@@ -1,35 +1,19 @@
 import { NextResponse } from "next/server";
+import { getLeagueDbId } from "@/lib/all-play/week";
 import { getTeamBoxscore } from "@/lib/espn/client";
 import { EspnAuthError } from "@/lib/espn/errors";
 import { getPlayerHeadshotUrl, getPositionName, getProTeamAbbreviation } from "@/lib/espn/enums";
+import { parseLeagueWeekParams } from "@/lib/espn/route-helpers";
+import { getSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
   try {
-    const leagueId = Number(process.env.LEAGUE_ID);
     const { searchParams } = new URL(request.url);
-    const seasonOverride = searchParams.get("season");
-    const season = seasonOverride ? Number(seasonOverride) : Number(process.env.SEASON);
-
-    if (!leagueId || !season) {
-      return NextResponse.json(
-        { status: "error", message: "Missing LEAGUE_ID or SEASON env vars." },
-        { status: 500 },
-      );
+    const parsed = parseLeagueWeekParams(searchParams);
+    if (parsed instanceof NextResponse) {
+      return parsed;
     }
-
-    const weekParam = searchParams.get("week");
-    const week = Number(weekParam);
-
-    if (!weekParam || !Number.isInteger(week) || week < 1) {
-      return NextResponse.json(
-        {
-          status: "error",
-          message:
-            "Missing or invalid 'week' query param — expected a positive integer, e.g. ?week=1.",
-        },
-        { status: 400 },
-      );
-    }
+    const { leagueId, season, week } = parsed;
 
     const teamIdParam = searchParams.get("teamId");
     const teamId = Number(teamIdParam);
@@ -43,6 +27,25 @@ export async function GET(request: Request) {
         },
         { status: 400 },
       );
+    }
+
+    const leagueDbId = await getLeagueDbId(leagueId, season);
+    if (leagueDbId) {
+      const { data: leagueRow } = await getSupabaseClient()
+        .from("leagues")
+        .select("current_week")
+        .eq("id", leagueDbId)
+        .single<{ current_week: number | null }>();
+
+      if (leagueRow?.current_week && week !== leagueRow.current_week) {
+        return NextResponse.json(
+          {
+            status: "error",
+            message: "Lineups are only available for the current week.",
+          },
+          { status: 400 },
+        );
+      }
     }
 
     const boxscore = await getTeamBoxscore(leagueId, season, week, teamId);

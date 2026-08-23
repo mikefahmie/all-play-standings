@@ -1,24 +1,16 @@
 import { BracketView } from "@/components/BracketView";
+import { DataOrError } from "@/components/DataOrError";
 import { FreshnessIndicator } from "@/components/FreshnessIndicator";
 import { computeSeasonStandings } from "@/lib/all-play/season";
-import { getLeagueDbId } from "@/lib/all-play/week";
-import { readIngestionState } from "@/lib/ingestion/cooldown";
-import { getSupabaseClient } from "@/lib/supabase/server";
+import { resolveLastErrorIfEmpty, resolveLeagueDbId } from "@/lib/ingestion/page-data";
 
 export default async function Bracket() {
-  const leagueId = Number(process.env.LEAGUE_ID);
-  const season = Number(process.env.SEASON);
-
-  const leagueDbId =
-    leagueId && season ? await getLeagueDbId(leagueId, season) : null;
+  const leagueDbId = await resolveLeagueDbId();
 
   const standings = leagueDbId ? await computeSeasonStandings(leagueDbId) : null;
   const seeds = standings && standings.length >= 6 ? standings.slice(0, 6) : null;
 
-  const lastError =
-    !seeds && leagueDbId
-      ? (await readIngestionState(getSupabaseClient(), leagueDbId)).lastError
-      : null;
+  const lastError = await resolveLastErrorIfEmpty(!seeds, leagueDbId);
 
   return (
     <div className="flex flex-1 flex-col gap-6 bg-background px-4 py-6 font-sans sm:px-6 sm:py-8">
@@ -29,17 +21,9 @@ export default async function Bracket() {
         <FreshnessIndicator />
       </div>
 
-      {seeds ? (
-        <BracketView seeds={seeds} />
-      ) : lastError ? (
-        <p className="text-lg text-error" role="alert">
-          {lastError}
-        </p>
-      ) : (
-        <p className="text-lg text-muted">
-          No data yet — hang tight while the first refresh pulls scores in.
-        </p>
-      )}
+      <DataOrError hasData={!!seeds} lastError={lastError}>
+        {seeds && <BracketView seeds={seeds} />}
+      </DataOrError>
     </div>
   );
 }

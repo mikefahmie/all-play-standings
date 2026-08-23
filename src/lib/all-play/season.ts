@@ -1,5 +1,6 @@
 import { getSupabaseClient } from "@/lib/supabase/server";
 import { computeAllPlayRecords, type TeamScore } from "./compute";
+import { resolveRelevantScores } from "./current-week";
 
 export interface SeasonStanding {
   teamId: number;
@@ -33,46 +34,47 @@ async function fetchTeamsAndScores(
 ): Promise<{ teams: TeamRow[]; scoreRows: WeeklyScoreRow[]; currentWeek: number }> {
   const supabase = getSupabaseClient();
 
-  const { data: teamRows, error: teamsError } = await supabase
-    .from("teams")
-    .select("id, name, abbrev, logo_url")
-    .eq("league_id", leagueId);
+  const [
+    { data: teamRows, error: teamsError },
+    { data: leagueRow, error: leagueError },
+    { data: scoreRows, error: scoresError },
+  ] = await Promise.all([
+    supabase
+      .from("teams")
+      .select("id, name, abbrev, logo_url")
+      .eq("league_id", leagueId),
+    supabase
+      .from("leagues")
+      .select("current_week")
+      .eq("id", leagueId)
+      .single<{ current_week: number | null }>(),
+    supabase
+      .from("weekly_scores")
+      .select("team_id, week, total_points, is_completed")
+      .eq("league_id", leagueId),
+  ]);
 
   if (teamsError) {
     throw new Error(teamsError.message);
   }
 
-  const { data: leagueRow, error: leagueError } = await supabase
-    .from("leagues")
-    .select("current_week")
-    .eq("id", leagueId)
-    .single<{ current_week: number | null }>();
-
   if (leagueError) {
     throw new Error(leagueError.message);
   }
-
-  const { data: scoreRows, error: scoresError } = await supabase
-    .from("weekly_scores")
-    .select("team_id, week, total_points, is_completed")
-    .eq("league_id", leagueId);
 
   if (scoresError) {
     throw new Error(scoresError.message);
   }
 
   const allScoreRows = (scoreRows ?? []) as WeeklyScoreRow[];
-  const currentWeek =
-    leagueRow?.current_week ??
-    allScoreRows.reduce((max, row) => Math.max(max, row.week), 0);
-
-  const relevantScoreRows = allScoreRows.filter(
-    (row) => row.is_completed || row.week === currentWeek,
+  const { currentWeek, scores } = resolveRelevantScores(
+    leagueRow?.current_week,
+    allScoreRows,
   );
 
   return {
     teams: (teamRows ?? []) as TeamRow[],
-    scoreRows: relevantScoreRows,
+    scoreRows: scores,
     currentWeek,
   };
 }
@@ -84,6 +86,7 @@ function aggregateStandings(
 ): SeasonStanding[] {
   const scoresByWeek = new Map<number, TeamScore[]>();
   for (const row of scoreRows) {
+    if (!row.is_completed) continue;
     if (throughWeek !== undefined && row.week > throughWeek) continue;
 
     const weekScores = scoresByWeek.get(row.week) ?? [];
@@ -200,18 +203,18 @@ export async function getSeasonStandingsWithTrend(
   const { teams, scoreRows, currentWeek } = await fetchTeamsAndScores(leagueId);
 
   const standings = aggregateStandings(teams, scoreRows);
-  const priorStandings =
-    currentWeek > 1 ? aggregateStandings(teams, scoreRows, currentWeek - 1) : null;
+
+  let priorStandings: SeasonStanding[] | null = null;
+  let standingsExcludingCurrentWeek: SeasonStandingWithTrend[] | null = null;
+
+  if (currentWeek > 1) {
+    priorStandings = aggregateStandings(teams, scoreRows, currentWeek - 1);
+    const twoWeeksAgoStandings =
+      currentWeek > 2 ? aggregateStandings(teams, scoreRows, currentWeek - 2) : null;
+    standingsExcludingCurrentWeek = attachTrend(priorStandings, twoWeeksAgoStandings);
+  }
 
   const standingsWithTrend = attachTrend(standings, priorStandings);
-
-  const standingsExcludingCurrentWeek =
-    currentWeek > 1
-      ? attachTrend(
-          priorStandings!,
-          currentWeek > 2 ? aggregateStandings(teams, scoreRows, currentWeek - 2) : null,
-        )
-      : null;
 
   return {
     standings: standingsWithTrend,
