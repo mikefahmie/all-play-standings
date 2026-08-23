@@ -16,6 +16,7 @@ create table if not exists leagues (
   espn_league_id    bigint not null,
   season            integer not null,
   name              text,
+  current_week      integer,
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now(),
 
@@ -27,6 +28,10 @@ comment on table leagues is
   'One row per (ESPN league, season). Other tables'' league_id references leagues.id, not the raw ESPN league ID.';
 comment on column leagues.espn_league_id is
   'Raw ESPN league ID (e.g. 33257291). Not globally unique alone -- unique together with season.';
+comment on column leagues.current_week is
+  'ESPN''s currentMatchupPeriod as of the last successful ingestion. Weeks < current_week are completed; current_week itself is the live/in-progress week; weeks > current_week are future and should be excluded from standings and week selectors.';
+
+alter table leagues add column if not exists current_week integer;
 
 -- ---------------------------------------------------------
 

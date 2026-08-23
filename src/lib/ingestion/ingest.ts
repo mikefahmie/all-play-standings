@@ -60,6 +60,15 @@ export async function ingestAllWeeks(
     const metadata = await getLeagueMetadata(leagueId, season);
     const allWeekScores = await getAllWeekScores(leagueId, season);
 
+    const { error: currentWeekError } = await supabase
+      .from("leagues")
+      .update({ current_week: metadata.currentWeek })
+      .eq("id", internalLeagueId);
+
+    if (currentWeekError) {
+      throw new Error(currentWeekError.message);
+    }
+
     const { data: upsertedTeams, error: teamsError } = await supabase
       .from("teams")
       .upsert(

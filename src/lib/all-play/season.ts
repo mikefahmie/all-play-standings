@@ -18,6 +18,7 @@ interface WeeklyScoreRow {
   team_id: number;
   week: number;
   total_points: number;
+  is_completed: boolean;
 }
 
 interface TeamRow {
@@ -29,7 +30,7 @@ interface TeamRow {
 
 async function fetchTeamsAndScores(
   leagueId: number,
-): Promise<{ teams: TeamRow[]; scoreRows: WeeklyScoreRow[] }> {
+): Promise<{ teams: TeamRow[]; scoreRows: WeeklyScoreRow[]; currentWeek: number }> {
   const supabase = getSupabaseClient();
 
   const { data: teamRows, error: teamsError } = await supabase
@@ -41,18 +42,38 @@ async function fetchTeamsAndScores(
     throw new Error(teamsError.message);
   }
 
+  const { data: leagueRow, error: leagueError } = await supabase
+    .from("leagues")
+    .select("current_week")
+    .eq("id", leagueId)
+    .single<{ current_week: number | null }>();
+
+  if (leagueError) {
+    throw new Error(leagueError.message);
+  }
+
   const { data: scoreRows, error: scoresError } = await supabase
     .from("weekly_scores")
-    .select("team_id, week, total_points")
+    .select("team_id, week, total_points, is_completed")
     .eq("league_id", leagueId);
 
   if (scoresError) {
     throw new Error(scoresError.message);
   }
 
+  const allScoreRows = (scoreRows ?? []) as WeeklyScoreRow[];
+  const currentWeek =
+    leagueRow?.current_week ??
+    allScoreRows.reduce((max, row) => Math.max(max, row.week), 0);
+
+  const relevantScoreRows = allScoreRows.filter(
+    (row) => row.is_completed || row.week === currentWeek,
+  );
+
   return {
     teams: (teamRows ?? []) as TeamRow[],
-    scoreRows: (scoreRows ?? []) as WeeklyScoreRow[],
+    scoreRows: relevantScoreRows,
+    currentWeek,
   };
 }
 
@@ -176,8 +197,7 @@ export interface SeasonStandingsResult {
 export async function getSeasonStandingsWithTrend(
   leagueId: number,
 ): Promise<SeasonStandingsResult> {
-  const { teams, scoreRows } = await fetchTeamsAndScores(leagueId);
-  const currentWeek = scoreRows.reduce((max, row) => Math.max(max, row.week), 0);
+  const { teams, scoreRows, currentWeek } = await fetchTeamsAndScores(leagueId);
 
   const standings = aggregateStandings(teams, scoreRows);
   const priorStandings =

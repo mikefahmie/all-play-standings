@@ -68,6 +68,16 @@ export async function getWeekData(
     throw new Error(teamsError.message);
   }
 
+  const { data: leagueRow, error: leagueError } = await supabase
+    .from("leagues")
+    .select("current_week")
+    .eq("id", leagueId)
+    .single<{ current_week: number | null }>();
+
+  if (leagueError) {
+    throw new Error(leagueError.message);
+  }
+
   const { data: scoreRows, error: scoresError } = await supabase
     .from("weekly_scores")
     .select("team_id, week, total_points, is_completed")
@@ -78,7 +88,14 @@ export async function getWeekData(
   }
 
   const teams = (teamRows ?? []) as TeamRow[];
-  const scores = (scoreRows ?? []) as WeeklyScoreRow[];
+  const allScores = (scoreRows ?? []) as WeeklyScoreRow[];
+  const currentWeek =
+    leagueRow?.current_week ??
+    allScores.reduce((max, row) => Math.max(max, row.week), 0);
+
+  const scores = allScores.filter(
+    (row) => row.is_completed || row.week === currentWeek,
+  );
 
   if (scores.length === 0) {
     return null;
