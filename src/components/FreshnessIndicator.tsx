@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useFreshness } from "@/hooks/useFreshness";
 
 function formatAgo(iso: string | null, now: number): string {
-  if (!iso) return "never";
+  if (!iso) return "–";
 
   const diffMs = now - new Date(iso).getTime();
   const diffSec = Math.floor(diffMs / 1000);
@@ -49,7 +49,7 @@ export function FreshnessIndicator() {
   if (isRefreshing) {
     buttonLabel = "Refreshing…";
   } else if (onCooldown) {
-    buttonLabel = `Refresh available in ${formatCountdown(cooldownRemainingMs)}`;
+    buttonLabel = `Refresh in ${formatCountdown(cooldownRemainingMs)}`;
   } else {
     buttonLabel = "Refresh";
   }
@@ -58,8 +58,8 @@ export function FreshnessIndicator() {
 
   return (
     <div className="flex flex-col items-center gap-2 font-sans">
-      <div className="flex items-center gap-3 rounded border border-divider bg-[image:var(--gradient-surface)] px-4 py-2">
-        <span className="text-sm text-muted">
+      <div className="flex items-center gap-2 whitespace-nowrap rounded border border-divider bg-[image:var(--gradient-surface)] px-3 py-1.5 sm:gap-3 sm:px-4 sm:py-2">
+        <span className="text-xs text-muted sm:text-sm">
           Last updated{" "}
           <span className="font-mono tabular-nums text-foreground">
             {formatAgo(lastIngestedAt, now)}
@@ -70,7 +70,7 @@ export function FreshnessIndicator() {
           onClick={() => refresh()}
           disabled={disabled}
           aria-live="polite"
-          className={`rounded px-3 py-1 text-sm font-semibold tracking-tight transition-colors ${
+          className={`whitespace-nowrap rounded px-2.5 py-1 text-xs font-semibold tracking-tight transition-colors sm:px-3 sm:text-sm ${
             disabled
               ? onCooldown
                 ? "cursor-not-allowed bg-transparent text-live"
