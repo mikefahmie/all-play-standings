@@ -106,6 +106,11 @@ export function PlayoffRounds({ data }: { data: PlayoffData }) {
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-col gap-10">
+      <p className="text-center text-sm text-muted">
+        Seeded by <span className="text-foreground">all-play record</span>, not ESPN&apos;s
+        standings. No byes — each round is decided by that week&apos;s score only.
+      </p>
+
       {champion && (
         <div className="flex flex-col items-center gap-2 rounded border border-accent bg-[image:var(--gradient-surface)] px-4 py-6 text-center">
           <span className="text-[10px] font-bold uppercase tracking-wide text-accent">
