@@ -1,6 +1,6 @@
 import { DataOrError } from "@/components/DataOrError";
 import { FreshnessIndicator } from "@/components/FreshnessIndicator";
-import { PlayoffRounds } from "@/components/PlayoffRounds";
+import { PlayoffFormatExplainer, PlayoffRounds } from "@/components/PlayoffRounds";
 import { getPlayoffData } from "@/lib/all-play/playoffs";
 import { resolveLastErrorIfEmpty, resolveLeagueDbId } from "@/lib/ingestion/page-data";
 
@@ -22,7 +22,7 @@ export default async function Playoffs() {
         {playoffData ? (
           <PlayoffRounds data={playoffData} />
         ) : (
-          <p className="text-sm text-muted">Playoffs begin week 15.</p>
+          <PlayoffFormatExplainer />
         )}
       </DataOrError>
     </div>
