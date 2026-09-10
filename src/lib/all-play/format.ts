@@ -7,7 +7,7 @@ export function formatWinPct(winPct: number): string {
   return formatted.startsWith("0.") ? formatted.slice(1) : formatted;
 }
 
-export function formatPoints(points: number, fractionDigits = 1): string {
+export function formatPoints(points: number, fractionDigits = 2): string {
   return points.toLocaleString("en-US", {
     minimumFractionDigits: fractionDigits,
     maximumFractionDigits: fractionDigits,
