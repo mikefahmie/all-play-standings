@@ -51,6 +51,10 @@ export default async function Standings({
         <FreshnessIndicator />
       </div>
 
+      <p className="-mt-4 text-sm text-muted">
+        Standings update after each week is complete.
+      </p>
+
       <DataOrError hasData={!!standings && standings.length > 0} lastError={lastError}>
         {standings && (
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
