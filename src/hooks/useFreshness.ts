@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type RefreshResponse =
@@ -46,6 +47,7 @@ export function useFreshness() {
   });
 
   const nextEligibleAtRef = useRef<string | null>(null);
+  const router = useRouter();
 
   const refresh = useCallback(async () => {
     setState((prev) => ({ ...prev, isRefreshing: true, fetchError: null }));
@@ -74,6 +76,10 @@ export function useFreshness() {
         isRefreshing: false,
         fetchError: null,
       });
+
+      if (data.status === "ingested") {
+        router.refresh();
+      }
     } catch (err) {
       setState((prev) => ({
         ...prev,
@@ -81,7 +87,7 @@ export function useFreshness() {
         fetchError: err instanceof Error ? err.message : "Network error",
       }));
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     refresh();
