@@ -5,15 +5,19 @@ Guidance for Claude Code when working in this repository.
 ## Project
 
 An all-play fantasy football standings app for a private ESPN Fantasy league
-(league ID `33257291`, 2026 season, top 6 make playoffs, seeds 1–2 get a
-bye). The league currently shows 12 teams (offseason roster) and is
-expected to settle at 11 teams once the season starts — don't hardcode a
-team count anywhere; derive it from the ESPN API response so the app works
-correctly at either size (or any other size, if the league changes again).
-Instead of showing each team's record against only its scheduled opponent,
-the app computes an **all-play record**: each team's weekly score compared
-against every other team's score. Three views: Week, Season Standings,
-Playoff Bracket.
+(league ID `33257291`, 2026 season, top 6 make playoffs). The league
+currently shows 12 teams (offseason roster) and is expected to settle at 11
+teams once the season starts — don't hardcode a team count anywhere; derive
+it from the ESPN API response so the app works correctly at either size (or
+any other size, if the league changes again). Instead of showing each
+team's record against only its scheduled opponent, the app computes an
+**all-play record**: each team's weekly score compared against every other
+team's score. Three views: Week, Season Standings, Playoffs.
+
+Playoffs are a 3-round all-play score elimination, not a seeded
+single-elimination bracket with byes: all 6 qualifiers play in round 1
+(week 15, cuts to 4), round 2 (week 16, cuts to 2), round 3 (week 17,
+crowns 1 champion). No byes for any seed.
 
 This is a proof of concept for a single family league — favor simple,
 working solutions over speculative generality. The one exception: every
@@ -73,8 +77,8 @@ it has the full reasoning behind each decision, not just the conclusion.
 
 Acceptance criteria in the user stories describe verifiable outcomes, not
 implementations. Folder structure, exact function signatures/interfaces,
-component structure, state management, bracket pairing convention,
-caching strategy, and similar implementation calls are yours to make. Notes
+component structure, state management, caching strategy, and similar
+implementation calls are yours to make. Notes
 in the user-stories sheet flag places I have a lean opinion, not a
 requirement — use judgment.
 
