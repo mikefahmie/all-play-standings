@@ -141,11 +141,24 @@ async function fetchLeagueData(
   return response.json();
 }
 
+function sumStarterPoints(entries: EspnRosterEntryResponse[] | undefined): number {
+  if (!entries) return 0;
+  return entries
+    .filter(
+      (entry) => entry.lineupSlotId !== BENCH_SLOT_ID && entry.lineupSlotId !== IR_SLOT_ID,
+    )
+    .reduce((sum, entry) => sum + (entry.playerPoolEntry.appliedStatTotal ?? 0), 0);
+}
+
 function mapMatchupTeam(
-  team: { teamId: number; totalPoints?: number } | undefined,
+  team: EspnMatchupTeamResponse | undefined,
+  useLiveStarterSum: boolean,
 ): TeamWeekScore | null {
   if (!team) return null;
-  return { teamId: team.teamId, totalPoints: team.totalPoints ?? 0 };
+  const totalPoints = useLiveStarterSum
+    ? sumStarterPoints(team.rosterForCurrentScoringPeriod?.entries)
+    : team.totalPoints ?? 0;
+  return { teamId: team.teamId, totalPoints };
 }
 
 export async function getLeagueMetadata(
@@ -163,8 +176,8 @@ export async function getLeagueMetadata(
 
   const schedule: EspnMatchup[] = data.schedule.map((matchup) => ({
     matchupPeriodId: matchup.matchupPeriodId,
-    home: mapMatchupTeam(matchup.home) ?? { teamId: matchup.home.teamId, totalPoints: 0 },
-    away: mapMatchupTeam(matchup.away),
+    home: mapMatchupTeam(matchup.home, false) ?? { teamId: matchup.home.teamId, totalPoints: 0 },
+    away: mapMatchupTeam(matchup.away, false),
   }));
 
   return {
@@ -179,19 +192,21 @@ export async function getWeekScores(
   season: number,
   week: number,
 ): Promise<WeekScores> {
-  const data = await fetchLeagueData(leagueId, season);
+  const data = await fetchLeagueData(leagueId, season, `&view=mBoxscore&scoringPeriodId=${week}`);
+  const isCompleted = week < data.status.currentMatchupPeriod;
 
   const teamScores: TeamWeekScore[] = data.schedule
     .filter((matchup) => matchup.matchupPeriodId === week)
     .flatMap((matchup) =>
-      [mapMatchupTeam(matchup.home), mapMatchupTeam(matchup.away)].filter(
-        (team): team is TeamWeekScore => team !== null,
-      ),
+      [
+        mapMatchupTeam(matchup.home, !isCompleted),
+        mapMatchupTeam(matchup.away, !isCompleted),
+      ].filter((team): team is TeamWeekScore => team !== null),
     );
 
   return {
     week,
-    isCompleted: week < data.status.currentMatchupPeriod,
+    isCompleted,
     teamScores,
   };
 }
@@ -200,13 +215,15 @@ export async function getAllWeekScores(
   leagueId: number,
   season: number,
 ): Promise<WeekScores[]> {
-  const data = await fetchLeagueData(leagueId, season);
+  const data = await fetchLeagueData(leagueId, season, "&view=mBoxscore");
 
   const scoresByWeek = new Map<number, TeamWeekScore[]>();
   for (const matchup of data.schedule) {
-    const teamScores = [mapMatchupTeam(matchup.home), mapMatchupTeam(matchup.away)].filter(
-      (team): team is TeamWeekScore => team !== null,
-    );
+    const isCompleted = matchup.matchupPeriodId < data.status.currentMatchupPeriod;
+    const teamScores = [
+      mapMatchupTeam(matchup.home, !isCompleted),
+      mapMatchupTeam(matchup.away, !isCompleted),
+    ].filter((team): team is TeamWeekScore => team !== null);
     if (teamScores.length === 0) continue;
 
     const existing = scoresByWeek.get(matchup.matchupPeriodId) ?? [];
