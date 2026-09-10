@@ -6,7 +6,7 @@ import { usePathname } from "next/navigation";
 const TABS = [
   { href: "/", label: "Week" },
   { href: "/standings", label: "Season Standings" },
-  { href: "/bracket", label: "Playoff Bracket" },
+  { href: "/playoffs", label: "Playoffs" },
 ];
 
 export function TabNav() {

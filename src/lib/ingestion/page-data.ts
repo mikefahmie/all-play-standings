@@ -12,7 +12,7 @@ export async function resolveLeagueDbId(): Promise<number | null> {
 /**
  * When a page's primary data fetch comes back empty, look up the ingestion
  * error so the page can distinguish "no data yet" from "ingestion is
- * failing" — used identically by the week, standings, and bracket pages.
+ * failing" — used identically by the week, standings, and playoffs pages.
  */
 export async function resolveLastErrorIfEmpty(
   isEmpty: boolean,
