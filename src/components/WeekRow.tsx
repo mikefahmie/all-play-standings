@@ -12,6 +12,7 @@ interface BoxscorePlayerView {
   position: string;
   proTeam: string;
   points: number;
+  statLine: string;
   headshotUrl: string;
 }
 
@@ -119,6 +120,11 @@ export function WeekCard({
                     <div className="text-xs text-muted">
                       {player.position} · {player.proTeam}
                     </div>
+                    {player.statLine && (
+                      <div className="font-mono text-[11px] leading-snug text-muted">
+                        {player.statLine}
+                      </div>
+                    )}
                   </div>
                   <span className="font-mono text-sm tabular-nums text-foreground">
                     {formatPoints(player.points)}

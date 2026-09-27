@@ -41,6 +41,8 @@ export interface BoxscorePlayer {
   positionId: number;
   proTeamId: number;
   points: number;
+  /** Actual (non-projected) raw stats for the week, keyed by ESPN stat ID. */
+  stats: Record<string, number>;
 }
 
 export interface TeamBoxscore {
@@ -66,8 +68,15 @@ interface EspnRosterEntryResponse {
       fullName: string;
       defaultPositionId: number;
       proTeamId: number;
+      stats?: EspnPlayerStatsResponse[];
     };
   };
+}
+
+interface EspnPlayerStatsResponse {
+  scoringPeriodId: number;
+  statSourceId: number;
+  stats?: Record<string, number>;
 }
 
 interface EspnMatchupTeamResponse {
@@ -94,6 +103,7 @@ interface EspnLeagueResponse {
 
 const BENCH_SLOT_ID = 20;
 const IR_SLOT_ID = 21;
+const ACTUAL_STAT_SOURCE_ID = 0;
 
 function getEspnCookieHeader(): string {
   const espnS2 = process.env.espn_s2;
@@ -241,6 +251,7 @@ export async function getAllWeekScores(
 
 function mapBoxscorePlayers(
   entries: EspnRosterEntryResponse[] | undefined,
+  week: number,
 ): BoxscorePlayer[] {
   if (!entries) return [];
 
@@ -254,6 +265,10 @@ function mapBoxscorePlayers(
       positionId: entry.playerPoolEntry.player.defaultPositionId,
       proTeamId: entry.playerPoolEntry.player.proTeamId,
       points: entry.playerPoolEntry.appliedStatTotal ?? 0,
+      stats:
+        entry.playerPoolEntry.player.stats?.find(
+          (s) => s.statSourceId === ACTUAL_STAT_SOURCE_ID && s.scoringPeriodId === week,
+        )?.stats ?? {},
     }));
 }
 
@@ -273,6 +288,6 @@ export async function getTeamBoxscore(
 
   return {
     teamId,
-    players: mapBoxscorePlayers(teamSide.rosterForCurrentScoringPeriod?.entries),
+    players: mapBoxscorePlayers(teamSide.rosterForCurrentScoringPeriod?.entries, week),
   };
 }

@@ -4,6 +4,7 @@ import { getTeamBoxscore } from "@/lib/espn/client";
 import { EspnAuthError } from "@/lib/espn/errors";
 import { getPlayerHeadshotUrl, getPositionName, getProTeamAbbreviation } from "@/lib/espn/enums";
 import { parseLeagueWeekParams } from "@/lib/espn/route-helpers";
+import { formatStatLine } from "@/lib/espn/stats";
 import { getSupabaseClient } from "@/lib/supabase/server";
 
 export async function GET(request: Request) {
@@ -57,14 +58,18 @@ export async function GET(request: Request) {
       );
     }
 
-    const players = boxscore.players.map((player) => ({
-      playerId: player.playerId,
-      fullName: player.fullName,
-      position: getPositionName(player.positionId),
-      proTeam: getProTeamAbbreviation(player.proTeamId),
-      points: player.points,
-      headshotUrl: getPlayerHeadshotUrl(player.playerId, player.proTeamId),
-    }));
+    const players = boxscore.players.map((player) => {
+      const position = getPositionName(player.positionId);
+      return {
+        playerId: player.playerId,
+        fullName: player.fullName,
+        position,
+        proTeam: getProTeamAbbreviation(player.proTeamId),
+        points: player.points,
+        statLine: formatStatLine(position, player.stats),
+        headshotUrl: getPlayerHeadshotUrl(player.playerId, player.proTeamId),
+      };
+    });
 
     return NextResponse.json({ status: "ok", teamId: boxscore.teamId, players });
   } catch (err) {
