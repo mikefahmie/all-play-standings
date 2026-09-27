@@ -7,6 +7,14 @@ import { resolveLastErrorIfEmpty, resolveLeagueDbId } from "@/lib/ingestion/page
 
 const PLAYOFF_SPOTS = 6;
 
+// Standings are sorted by record first, so equal records are always adjacent.
+function sameRecord(
+  a: { wins: number; losses: number; ties: number },
+  b: { wins: number; losses: number; ties: number },
+): boolean {
+  return a.wins === b.wins && a.losses === b.losses && a.ties === b.ties;
+}
+
 export default async function Standings({
   searchParams,
 }: {
@@ -60,11 +68,14 @@ export default async function Standings({
       <DataOrError hasData={!!standings && standings.length > 0} lastError={lastError}>
         {standings && (
           <div className="mx-auto flex w-full max-w-3xl flex-col gap-2">
-            {standings.map((team) => (
+            {standings.map((team, i) => (
               <StandingsCard
                 key={team.teamId}
                 team={team}
                 isLastPlayoffSpot={team.rank === PLAYOFF_SPOTS}
+                isTiedOnRecord={[standings[i - 1], standings[i + 1]].some(
+                  (other) => other && sameRecord(team, other),
+                )}
               />
             ))}
           </div>

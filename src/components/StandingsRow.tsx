@@ -17,10 +17,16 @@ const TREND_COLOR = {
 export function StandingsCard({
   team,
   isLastPlayoffSpot = false,
+  isTiedOnRecord = false,
 }: {
   team: SeasonStandingWithTrend;
   isLastPlayoffSpot?: boolean;
+  isTiedOnRecord?: boolean;
 }) {
+  // Points are the tiebreaker, so highlight them when the record alone
+  // doesn't separate this team from a neighbor.
+  const pointsColor = isTiedOnRecord ? "text-accent" : "text-muted";
+
   return (
     <>
       <div className="flex items-center gap-3 rounded border border-divider bg-[image:var(--gradient-surface)] px-4 py-3">
@@ -57,7 +63,7 @@ export function StandingsCard({
           </div>
           <div className="hidden flex-col items-end gap-0.5 sm:flex">
             <span className="text-[10px] uppercase tracking-wide text-muted">Points</span>
-            <span className="font-mono text-sm tabular-nums text-muted">
+            <span className={`font-mono text-sm tabular-nums ${pointsColor}`}>
               {formatPoints(team.totalPoints)}
             </span>
           </div>
@@ -65,6 +71,9 @@ export function StandingsCard({
             <span className="text-[10px] uppercase tracking-wide text-muted">Record</span>
             <span className="font-display text-3xl font-bold tabular-nums text-foreground">
               {formatRecord(team.wins, team.losses, team.ties)}
+            </span>
+            <span className={`font-mono text-xs tabular-nums sm:hidden ${pointsColor}`}>
+              {formatPoints(team.totalPoints)} pts
             </span>
           </div>
         </div>
