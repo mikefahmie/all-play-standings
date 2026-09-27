@@ -79,19 +79,37 @@ async function fetchTeamsAndScores(
   };
 }
 
+interface AggregateOptions {
+  throughWeek?: number;
+  /**
+   * Include the in-progress current week's live (starter-summed) scores.
+   * Never used for playoff seeding — only the standings page's opt-in toggle.
+   */
+  inProgressWeek?: number;
+}
+
 function aggregateStandings(
   teams: TeamRow[],
   scoreRows: WeeklyScoreRow[],
-  throughWeek?: number,
+  { throughWeek, inProgressWeek }: AggregateOptions = {},
 ): SeasonStanding[] {
   const scoresByWeek = new Map<number, TeamScore[]>();
   for (const row of scoreRows) {
-    if (!row.is_completed) continue;
+    if (!row.is_completed && row.week !== inProgressWeek) continue;
     if (throughWeek !== undefined && row.week > throughWeek) continue;
 
     const weekScores = scoresByWeek.get(row.week) ?? [];
     weekScores.push({ teamId: row.team_id, totalPoints: row.total_points });
     scoresByWeek.set(row.week, weekScores);
+  }
+
+  // A live week where nobody has scored yet (rolled over, no kickoffs) would
+  // hand every team N-1 ties — skip it until real points exist.
+  if (inProgressWeek !== undefined) {
+    const liveScores = scoresByWeek.get(inProgressWeek);
+    if (liveScores && liveScores.every((score) => score.totalPoints === 0)) {
+      scoresByWeek.delete(inProgressWeek);
+    }
   }
 
   const totals = new Map<
@@ -202,15 +220,17 @@ export async function getSeasonStandingsWithTrend(
 ): Promise<SeasonStandingsResult> {
   const { teams, scoreRows, currentWeek } = await fetchTeamsAndScores(leagueId);
 
-  const standings = aggregateStandings(teams, scoreRows);
+  const standings = aggregateStandings(teams, scoreRows, { inProgressWeek: currentWeek });
 
   let priorStandings: SeasonStanding[] | null = null;
   let standingsExcludingCurrentWeek: SeasonStandingWithTrend[] | null = null;
 
   if (currentWeek > 1) {
-    priorStandings = aggregateStandings(teams, scoreRows, currentWeek - 1);
+    priorStandings = aggregateStandings(teams, scoreRows, { throughWeek: currentWeek - 1 });
     const twoWeeksAgoStandings =
-      currentWeek > 2 ? aggregateStandings(teams, scoreRows, currentWeek - 2) : null;
+      currentWeek > 2
+        ? aggregateStandings(teams, scoreRows, { throughWeek: currentWeek - 2 })
+        : null;
     standingsExcludingCurrentWeek = attachTrend(priorStandings, twoWeeksAgoStandings);
   }
 

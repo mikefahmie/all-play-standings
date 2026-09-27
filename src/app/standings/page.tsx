@@ -13,7 +13,7 @@ export default async function Standings({
   searchParams: Promise<{ includeCurrent?: string }>;
 }) {
   const { includeCurrent } = await searchParams;
-  const includeCurrentWeek = includeCurrent !== "0";
+  const includeCurrentWeek = includeCurrent === "1";
 
   const leagueDbId = await resolveLeagueDbId();
 
@@ -52,7 +52,9 @@ export default async function Standings({
       </div>
 
       <p className="-mt-4 text-sm text-muted">
-        Standings update after each week is complete.
+        {includeCurrentWeek && seasonStandings && seasonStandings.currentWeek > 1
+          ? `Includes live Week ${seasonStandings.currentWeek} scores from current starters — not final.`
+          : "Standings update after each week is complete."}
       </p>
 
       <DataOrError hasData={!!standings && standings.length > 0} lastError={lastError}>
